@@ -1,8 +1,7 @@
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-/* import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import CheckIcon from '@mui/icons-material/Check'; */
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import { XMLParser } from "fast-xml-parser";
 import React, { useState , useRef} from "react";
 import { AppBar } from "@mui/material";
@@ -14,7 +13,6 @@ import Stack from '@mui/material/Stack'
 import Table from '@mui/material/Table'
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
-/* import TableContainer from "@mui/material/TableContainer"; */
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Toolbar from "@mui/material/Toolbar";
@@ -196,7 +194,7 @@ const CargaArchivos = () => {
           </Button>
         </Box>
         <Box>
-          <Button startIcon={<CloudUploadIcon />} component="label" variant="contained"><input onClick={handleClear} hidden></input>
+          <Button startIcon={<CleaningServicesIcon />} component="label" variant="contained"><input onClick={handleClear} hidden></input>
             Limpiar
           </Button>
         </Box>
