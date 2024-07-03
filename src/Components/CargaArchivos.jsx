@@ -41,7 +41,6 @@ const CargaArchivos = () => {
   const [jsonResults, setJsonResults] = useState([null, null]);
   const [errors, setErrors] = useState([null, null]);
   const fileInputRefs = [useRef(null), useRef(null)];
-
   const handleFileUpload = (event, fileIndex) => {
     const file = event.target.files[0];
 
@@ -63,7 +62,7 @@ const CargaArchivos = () => {
             const newResults = [...prevState];
             newResults[fileIndex] = result;
             return newResults;
-          });
+          }); 
         } catch (err) {
           setErrors((prevState) => {
             const newErrors = [...prevState];
@@ -94,7 +93,7 @@ const CargaArchivos = () => {
     })
   };
 
-  const extraerValores = (json, nombresPropiedades) => {
+    const extraerValores = (json, nombresPropiedades) => {
     if (!json) return [];
 
     const results = {}
@@ -134,7 +133,7 @@ const CargaArchivos = () => {
     const asociaciones = []
     const managedObjects = json?.raml?.cmData?.managedObject || []
     managedObjects.forEach(mo => {
-      if (mo.class.includes('ETHLK')){
+      if (mo.class.includes('ETHLK') & !mo.class.includes('ETHLK_R')){
         const eif = {
           connectorLabel: '',
           administrativeState: '',
@@ -153,7 +152,6 @@ const CargaArchivos = () => {
 
   const asociaciones1 = valoresAsociados(jsonResults[0])
   const asociaciones2 = valoresAsociados(jsonResults[1])
-  
   const commonLength = Math.max(asociaciones1.length, asociaciones2.length)
   const safeValue = (value) => (value === undefined || value === null ? '-': value)
 
@@ -167,18 +165,23 @@ const CargaArchivos = () => {
     }
   }
 
+/*   console.log(JSON.stringify(extraerValores(jsonResults[0], ['localIpAddr'])))
+  
+  console.log(JSON.stringify(extraerValores(jsonResults[0], ['userLabel'])))
+  console.log(JSON.stringify(extraerValores(jsonResults[1], ['localIpAddr']))) */
+  
   return (
     <>
       <ThemeProvider theme={theme}>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h5" sx={{ flexGrow: 1 }}>
+          <Typography variant="h5">
             Comparador SCF BOIR
           </Typography>
         </Toolbar>        
       </AppBar>
       
-      <Stack  direction={{ xs: 'column', sm: 'row' }} justifyContent='center' spacing={{ xs: 1, sm: 2, md: 4 }} margin={2}>
+      <Stack  direction={{ xs: 'column', sm: 'row' }} justifyContent={{xs:'center'}} alignItems="center" spacing={{ xs: 1, sm: 2, md: 4 }} margin={2}>
         <Box>
           <Button startIcon={<CloudUploadIcon />} component="label" variant="contained">
             <input type="file" accept=".xml" onChange={(e) => handleFileUpload(e, 0)} ref={fileInputRefs[0]} hidden></input>
@@ -198,11 +201,11 @@ const CargaArchivos = () => {
             Limpiar
           </Button>
         </Box>
-        </Stack>
+        </Stack>   
 
         <Divider />
         
-        <Table stickyHeader component={Paper} elevation={4} sx={{marginTop:'10px',  width: '90%', mx: 'auto'  }} >
+        <Table stickyHeader component={Paper} elevation={4} sx={{marginTop:'10px', width: '80%', mx: 'auto'  }} >
           <TableHead>
             <TableRow >
               <TableCell sx={{fontWeight:'bold', backgroundColor: '#b3e5fc', fontSize:'15px'}}>Parámetros</TableCell>
@@ -285,7 +288,7 @@ const CargaArchivos = () => {
                         (extraerValores(jsonResults[1], ['vlanAwarenessEnabled']).vlanAwarenessEnabled?.[0])
                       )}
                   </TableCell>
-                </TableRow>
+                </TableRow> 
           </TableBody>
           )}
         </Table>
