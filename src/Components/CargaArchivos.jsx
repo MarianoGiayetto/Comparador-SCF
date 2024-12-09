@@ -20,6 +20,7 @@ import Typography from "@mui/material/Typography";
 import Divider from '@mui/material/Divider';
 import { blue } from '@mui/material/colors';
 
+
 const theme = createTheme({
   palette: {
     primary: {
@@ -38,10 +39,13 @@ const theme = createTheme({
 });
 
 const CargaArchivos = () => {
+  const [vlanIpTable1, setVlanIpTable1] = useState([]);
+  const [vlanIpTable2, setVlanIpTable2] = useState([]);
   const [jsonResults, setJsonResults] = useState([null, null]);
   const [errors, setErrors] = useState([null, null]);
   const fileInputRefs = [useRef(null), useRef(null)];
-  const handleFileUpload = (event, fileIndex) => {
+
+  const handleFileUpload = (event, fileIndex, setVlanIpTable) => {
     const file = event.target.files[0];
 
     if (file) {
@@ -62,7 +66,47 @@ const CargaArchivos = () => {
             const newResults = [...prevState];
             newResults[fileIndex] = result;
             return newResults;
-          }); 
+          })
+
+          const managedObjects = result.raml.cmData?.managedObject || []
+          
+          const vlanObjects = managedObjects
+            .filter((obj) => obj["class"] === "com.nokia.srbts.tnl:VLANIF")
+            .map((vlanObj) => {
+              const distName = vlanObj["distName"]
+              const params = Array.isArray(vlanObj.p) ? vlanObj.p : [vlanObj.p];   
+              const vlanId = params.find((p) => p["name"] === "vlanId")?.value;
+                
+              const userLabel = params.find((p) => p["name"] === "userLabel")?.value;
+              const vlanIdentifier = distName.match(/VLANIF-(\d+)/)?.[1];
+            return { distName, vlanId, userLabel, vlanIdentifier };
+            })
+            console.log(vlanObjects)
+
+        const ipObjects = managedObjects
+        .filter((obj) => obj["class"] === "com.nokia.srbts.tnl:IPADDRESSV4")
+        .map((ipObj) => {
+          const distName = ipObj["distName"];
+          const params = Array.isArray(ipObj.p) ? ipObj.p : [ipObj.p];
+          const ipAddress = params.find((p) => p["name"] === "localIpAddr")?.value;
+          const localIpPrefixLength = params.find((p) => p["name"] === "localIpPrefixLength")?.value;
+          const ipIdentifier = distName.match(/IPIF-(\d+)/)?.[1]; // Extract identifier after IPIF-
+          console.log(localIpPrefixLength)
+          return { distName, ipAddress, ipIdentifier, localIpPrefixLength };
+          
+        });
+          const vlanIpMapping = vlanObjects.map((vlan) => {
+          const matchingIp = ipObjects.find((ip) => ip.ipIdentifier === vlan.vlanIdentifier);
+          
+          return {
+            vlanId: vlan.vlanId || "VLAN desconocida",
+            userLabel: vlan.userLabel || "Sin etiqueta",
+            ipAddress: matchingIp?.ipAddress || "No se encontró la dirección IP",
+            localIpPrefixLength: matchingIp?.localIpPrefixLength || "No se encontró",
+          };
+        });
+        setVlanIpTable(vlanIpMapping);        
+
         } catch (err) {
           setErrors((prevState) => {
             const newErrors = [...prevState];
@@ -86,6 +130,8 @@ const CargaArchivos = () => {
   const handleClear = () => {
     setJsonResults([null, null]);
     setErrors([null, null]);
+    setVlanIpTable1('')
+    setVlanIpTable2('')
     fileInputRefs.forEach(ref => {
       if (ref.current) {
         ref.current.value = ''
@@ -155,7 +201,14 @@ const CargaArchivos = () => {
   const commonLength = Math.max(asociaciones1.length, asociaciones2.length)
   const safeValue = (value) => (value === undefined || value === null ? '-': value)
 
-  const mostrarTabla = jsonResults[0] && jsonResults[1];
+  const mostrarTabla1 = jsonResults[0] && jsonResults[1];
+  
+
+  /* const mostrarTabla2 = Array.isArray(vlanIpTable1) && !vlanIpTable1.length
+
+  //const mostrarTabla2 = !vlanIpTable1.lenght && !vlanIpTable2.length;
+  console.log(mostrarTabla2) */
+ 
 
   const compararValores = (valor1, valor2) => {
     if (valor1 === valor2){
@@ -184,14 +237,14 @@ const CargaArchivos = () => {
       <Stack  direction={{ xs: 'column', sm: 'row' }} justifyContent={{xs:'center'}} alignItems="center" spacing={{ xs: 1, sm: 2, md: 4 }} margin={2}>
         <Box>
           <Button startIcon={<CloudUploadIcon />} component="label" variant="contained">
-            <input type="file" accept=".xml" onChange={(e) => handleFileUpload(e, 0)} ref={fileInputRefs[0]} hidden></input>
+            <input type="file" accept=".xml" onChange={(e) => handleFileUpload(e, 0, setVlanIpTable1)} ref={fileInputRefs[0]} hidden></input>
             {errors[0] && <p style={{ color: 'red' }}>{errors[0]}</p>}
             Subir archivo 1
           </Button>
         </Box>
         <Box>
           <Button startIcon={<CloudUploadIcon />} component="label" variant="contained">
-            <input type="file" accept=".xml" onChange={(e) => handleFileUpload(e, 1)} ref={fileInputRefs[1]} hidden></input>
+            <input type="file" accept=".xml" onChange={(e) => handleFileUpload(e, 1, setVlanIpTable2)} ref={fileInputRefs[1]} hidden></input>
             {errors[1] && <p style={{ color: 'red' }}>{errors[1]}</p>}
             Subir archivo 2
           </Button>
@@ -214,7 +267,7 @@ const CargaArchivos = () => {
               <TableCell sx={{fontWeight:'bold', backgroundColor: '#b3e5fc', fontSize:'15px'}}align="center">Comparación</TableCell>
             </TableRow>
           </TableHead>
-          {mostrarTabla && (
+          {mostrarTabla1 && (
           <TableBody>
            {Array.from({ length: commonLength }).map((_, index) => (
               <React.Fragment key={index}>
@@ -292,6 +345,61 @@ const CargaArchivos = () => {
           </TableBody>
           )}
         </Table>
+
+        {/* {mostrarTabla2 && ( */}
+        <Stack  direction={{ xs: 'column', md: 'column', lg: 'row' }} justifyContent='center' alignItems="center" spacing={{ xs: 2, sm: 2, md: 4 }} marginTop={2} >
+          <Box>
+        {vlanIpTable1.length > 0 && (
+              <Table component={Paper} elevation={4}  >
+                <TableHead>
+                  <TableRow>
+                    <TableCell align="center" sx={{fontWeight:'bold', backgroundColor: '#b3e5fc'}}>VLAN ID</TableCell>
+                    <TableCell align="center" sx={{fontWeight:'bold', backgroundColor: '#b3e5fc'}}>Etiqueta</TableCell>
+                    <TableCell align="center" sx={{fontWeight:'bold', backgroundColor: '#b3e5fc'}}>Dirección IP</TableCell>
+                    <TableCell align="center" sx={{fontWeight:'bold', backgroundColor: '#b3e5fc'}}>Máscara de subred</TableCell>
+                  </TableRow>
+                  </TableHead>
+                
+                <TableBody>
+                  {vlanIpTable1.map((entry, index) => (
+                    <TableRow key={index}>
+                      <TableCell align="center">{entry.vlanId}</TableCell>
+                      <TableCell align="center">{entry.userLabel}</TableCell>
+                      <TableCell align="center">{entry.ipAddress}</TableCell>
+                      <TableCell align="center">{entry.localIpPrefixLength}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                
+              </Table>
+            )}
+            </Box>
+            <Box>
+            {vlanIpTable2.length > 0 && (
+              <Table component={Paper} elevation={4} >
+                <TableHead>
+                  <TableRow>
+                    <TableCell align="center" sx={{fontWeight:'bold', backgroundColor: '#b3e5fc'}}>VLAN ID</TableCell>
+                    <TableCell align="center" sx={{fontWeight:'bold', backgroundColor: '#b3e5fc'}}>Etiqueta</TableCell>
+                    <TableCell align="center" sx={{fontWeight:'bold', backgroundColor: '#b3e5fc'}}>Dirección IP</TableCell>
+                    <TableCell align="center" sx={{fontWeight:'bold', backgroundColor: '#b3e5fc'}}>Máscara de subred</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {vlanIpTable2.map((entry, index) => (
+                    <TableRow key={index}>
+                      <TableCell align="center">{entry.vlanId}</TableCell>
+                      <TableCell align="center">{entry.userLabel}</TableCell>
+                      <TableCell align="center">{entry.ipAddress}</TableCell>
+                      <TableCell align="center">{entry.localIpPrefixLength}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            </Box>
+            </Stack>
+            {/* )} */}
     </ThemeProvider>
     </>
   );
